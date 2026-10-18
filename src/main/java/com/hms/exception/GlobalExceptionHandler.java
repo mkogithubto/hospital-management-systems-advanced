@@ -1,10 +1,16 @@
+
 package com.hms.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.dao.DataIntegrityViolationException;
+import java.util.Map;
+
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -45,7 +51,6 @@ public class GlobalExceptionHandler {
                 .body(message);
     }
 
-
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleIllegalArgumentException(
             IllegalArgumentException ex) {
@@ -55,4 +60,39 @@ public class GlobalExceptionHandler {
                 .body(ex.getMessage());
     }
 
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatusException(
+            ResponseStatusException ex) {
+
+        HttpStatus status = HttpStatus.valueOf(
+                ex.getStatusCode().value()
+        );
+
+        Map<String, Object> body = Map.of(
+                "status", status.value(),
+                "error", status.getReasonPhrase(),
+                "message", ex.getReason() != null
+                        ? ex.getReason()
+                        : "Request failed"
+        );
+
+        return ResponseEntity
+                .status(ex.getStatusCode())
+                .body(body);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex) {
+
+        Map<String, Object> body = Map.of(
+                "status", HttpStatus.CONFLICT.value(),
+                "error", HttpStatus.CONFLICT.getReasonPhrase(),
+                "message", "The request conflicts with existing data"
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(body);
+    }
 }
