@@ -17,6 +17,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.hms.entity.Bed;
+import com.hms.repository.BedRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -27,6 +31,7 @@ public class IpdAdmissionServiceImpl implements IpdAdmissionService {
     private final IpdAdmissionRepository ipdAdmissionRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
+    private final BedRepository bedRepository;
 
     @Override
     @Transactional
@@ -42,22 +47,46 @@ public class IpdAdmissionServiceImpl implements IpdAdmissionService {
                         "Doctor not found with ID: " + request.getDoctorId()
                 ));
 
+        Bed bed = bedRepository.findByIdAndDeletedFalse(request.getBedId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Active bed not found with ID: " + request.getBedId()
+                ));
+
+        if (!"AVAILABLE".equals(bed.getStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Bed is not available. Current status: " + bed.getStatus()
+            );
+        }
+
+        if (ipdAdmissionRepository.existsByBed_IdAndStatusAndDeletedFalse(
+                bed.getId(), "ADMITTED")) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Bed is already assigned to an active admission"
+            );
+        }
+
         IpdAdmission admission = new IpdAdmission();
 
         admission.setAdmissionCode(generateAdmissionCode());
         admission.setPatient(patient);
         admission.setDoctor(doctor);
+        admission.setBed(bed);
         admission.setAdmissionDate(request.getAdmissionDate());
         admission.setAdmissionReason(request.getAdmissionReason());
         admission.setDiagnosis(request.getDiagnosis());
         admission.setStatus("ADMITTED");
         admission.setDeleted(false);
 
-        IpdAdmission savedAdmission =
-                ipdAdmissionRepository.save(admission);
+        bed.setStatus("OCCUPIED");
+        bedRepository.save(bed);
+
+        IpdAdmission savedAdmission = ipdAdmissionRepository.save(admission);
 
         return mapToResponse(savedAdmission);
     }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -112,16 +141,20 @@ public class IpdAdmissionServiceImpl implements IpdAdmissionService {
         IpdAdmission admission = ipdAdmissionRepository
                 .findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "IPD admission not found with ID: " + id
-                ));
+                        "IPD admission not found with ID: " + id));
 
         if (!"ADMITTED".equals(admission.getStatus())) {
             throw new IllegalStateException(
                     "Only admitted patients can be discharged. Current status: "
-                            + admission.getStatus()
-            );
+                            + admission.getStatus());
         }
 
+        // Release the assigned bed
+        Bed bed = admission.getBed();
+        bed.setStatus("AVAILABLE");
+        bedRepository.save(bed);
+
+        // Update admission details
         admission.setDischargeDate(java.time.LocalDateTime.now());
         admission.setStatus("DISCHARGED");
 

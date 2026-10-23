@@ -16,4 +16,9 @@ public interface IpdAdmissionRepository
     Optional<IpdAdmission> findByIdAndDeletedFalse(Long id);
 
     Page<IpdAdmission> findAllByDeletedFalse(Pageable pageable);
+
+    boolean existsByBed_IdAndStatusAndDeletedFalse(
+            Long bedId,
+            String status
+    );
 }

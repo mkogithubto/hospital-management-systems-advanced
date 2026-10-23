@@ -28,4 +28,7 @@ public class IpdAdmissionRequest {
 
     @Size(max = 1000, message = "Diagnosis must not exceed 1000 characters")
     private String diagnosis;
+
+    @NotNull(message = "Bed ID is required")
+    private Long bedId;
 }

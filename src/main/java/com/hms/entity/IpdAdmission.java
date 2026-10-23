@@ -4,6 +4,7 @@ package com.hms.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import com.hms.entity.Bed;
 
 import java.time.LocalDateTime;
 
@@ -27,6 +28,10 @@ public class IpdAdmission {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "doctor_id", nullable = false)
     private Doctor doctor;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "bed_id", nullable = false)
+    private Bed bed;
 
     @Column(nullable = false)
     private LocalDateTime admissionDate;
