@@ -29,8 +29,8 @@ public class IpdAdmission {
     @JoinColumn(name = "doctor_id", nullable = false)
     private Doctor doctor;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "bed_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "bed_id", nullable = true)
     private Bed bed;
 
     @Column(nullable = false)
