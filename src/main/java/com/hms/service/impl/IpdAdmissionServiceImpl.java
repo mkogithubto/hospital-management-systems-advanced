@@ -47,7 +47,7 @@ public class IpdAdmissionServiceImpl implements IpdAdmissionService {
                         "Doctor not found with ID: " + request.getDoctorId()
                 ));
 
-        Bed bed = bedRepository.findByIdAndDeletedFalse(request.getBedId())
+        Bed bed = bedRepository.findByIdAndDeletedFalseForUpdate(request.getBedId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Active bed not found with ID: " + request.getBedId()
                 ));
@@ -139,7 +139,7 @@ public class IpdAdmissionServiceImpl implements IpdAdmissionService {
     public IpdAdmissionResponse dischargeAdmission(Long id) {
 
         IpdAdmission admission = ipdAdmissionRepository
-                .findByIdAndDeletedFalse(id)
+                .findByIdAndDeletedFalseForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "IPD admission not found with ID: " + id));
 
@@ -183,10 +183,12 @@ public class IpdAdmissionServiceImpl implements IpdAdmissionService {
 
 
 
+
     private IpdAdmissionResponse mapToResponse(IpdAdmission admission) {
 
         Patient patient = admission.getPatient();
         Doctor doctor = admission.getDoctor();
+        Bed bed = admission.getBed();
 
         return IpdAdmissionResponse.builder()
                 .id(admission.getId())
@@ -195,6 +197,8 @@ public class IpdAdmissionServiceImpl implements IpdAdmissionService {
                 .patientName(patient.getFirstName() + " " + patient.getLastName())
                 .doctorId(doctor.getId())
                 .doctorName(doctor.getFirstName() + " " + doctor.getLastName())
+                .bedId(bed != null ? bed.getId() : null)
+                .bedNumber(bed != null ? bed.getBedNumber() : null)
                 .admissionDate(admission.getAdmissionDate())
                 .dischargeDate(admission.getDischargeDate())
                 .admissionReason(admission.getAdmissionReason())
@@ -204,6 +208,7 @@ public class IpdAdmissionServiceImpl implements IpdAdmissionService {
                 .updatedAt(admission.getUpdatedAt())
                 .build();
     }
+
 
     private String generateAdmissionCode() {
         return "IPD-" + ThreadLocalRandom.current().nextInt(100000, 1000000);

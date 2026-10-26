@@ -7,6 +7,7 @@ import com.hms.entity.Bed;
 import com.hms.entity.Room;
 import com.hms.repository.BedRepository;
 import com.hms.repository.RoomRepository;
+import com.hms.repository.IpdAdmissionRepository;
 import com.hms.service.BedService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,13 +24,16 @@ public class BedServiceImpl implements BedService {
 
     private final BedRepository bedRepository;
     private final RoomRepository roomRepository;
+    private final IpdAdmissionRepository ipdAdmissionRepository;
 
     public BedServiceImpl(
             BedRepository bedRepository,
-            RoomRepository roomRepository
+            RoomRepository roomRepository,
+            IpdAdmissionRepository ipdAdmissionRepository
     ) {
         this.bedRepository = bedRepository;
         this.roomRepository = roomRepository;
+        this.ipdAdmissionRepository = ipdAdmissionRepository;
     }
 
     @Override
@@ -130,6 +134,7 @@ public class BedServiceImpl implements BedService {
         return mapToResponse(updatedBed);
     }
 
+
     @Override
     public void deleteBed(Long id) {
 
@@ -139,9 +144,22 @@ public class BedServiceImpl implements BedService {
                         "Active bed not found with id: " + id
                 ));
 
+        boolean hasActiveAdmission =
+                ipdAdmissionRepository.existsByBed_IdAndStatusAndDeletedFalse(
+                        id, "ADMITTED"
+                );
+
+        if ("OCCUPIED".equals(bed.getStatus()) || hasActiveAdmission) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot delete an occupied bed with an active IPD admission"
+            );
+        }
+
         bed.setDeleted(true);
-        bedRepository.save(bed);
+        bedRepository.saveAndFlush(bed);
     }
+
 
     private BedResponse mapToResponse(Bed bed) {
 

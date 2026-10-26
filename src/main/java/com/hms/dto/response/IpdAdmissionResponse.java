@@ -22,6 +22,10 @@ public class IpdAdmissionResponse {
 
     private String doctorName;
 
+    private Long bedId;
+
+    private String bedNumber;
+
     private LocalDateTime admissionDate;
 
     private LocalDateTime dischargeDate;
