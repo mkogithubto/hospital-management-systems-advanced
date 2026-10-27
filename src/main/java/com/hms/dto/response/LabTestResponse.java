@@ -1,0 +1,33 @@
+
+package com.hms.dto.response;
+
+import lombok.Builder;
+import lombok.Getter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Getter
+@Builder
+public class LabTestResponse {
+
+    private Long id;
+
+    private String testCode;
+
+    private String testName;
+
+    private String category;
+
+    private String description;
+
+    private String sampleType;
+
+    private BigDecimal price;
+
+    private String status;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+}
