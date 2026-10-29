@@ -330,4 +330,70 @@ Do not physically delete existing records to clean up test data. Preserve the pr
 [Pending] Complete remaining validation and error scenarios.
 
 
+
+1. Occupied-Bed Deletion Protection
+
+Request: DELETE /api/v1/beds/7
+
+Result: 409 Conflict
+
+Message: Cannot delete an occupied bed with an active IPD admission
+
+Verification: Bed ID 7 remained active and occupied.
+
+2. Occupied-Bed Assignment Protection
+
+Request: POST /api/v1/ipd-admissions
+
+Test: Attempted to assign BED-003 (ID 7) to another admission while occupied.
+
+Result: 409 Conflict
+
+Message: Bed is not available. Current status: OCCUPIED
+
+Verification: No new admission was created by the rejected request.
+
+3. Discharge Releases the Bed
+
+Request: PATCH /api/v1/ipd-admissions/5/discharge
+
+Result: 200 OK
+
+Verification: Admission ID 5 became DISCHARGED, its discharge date was populated, and BED-003 became AVAILABLE.
+
+4. Bed Reuse After Discharge
+
+Request: POST /api/v1/ipd-admissions
+
+Result: 201 Created
+
+New admission: ID 8, code IPD-361017
+
+Bed: BED-003 (ID 7)
+
+Verification: The new admission became ADMITTED, and the bed status changed to OCCUPIED.
+
+5. Repeated Discharge Protection
+
+Request: PATCH /api/v1/ipd-admissions/5/discharge
+
+Result: 409 Conflict
+
+Message: Only admitted patients can be discharged. Current status: DISCHARGED
+
+Verification: BED-003 remained occupied by the active admission.
+
+6. MySQL Verification
+
+Admission ID 5: DISCHARGED, is_deleted = 0, with discharge date populated.
+
+Admission ID 8: ADMITTED, is_deleted = 0, with no discharge date.
+
+Bed ID 7: OCCUPIED, is_deleted = 0.
+
+Overall Result
+
+The tested IPD–Bed integration scenarios passed, including occupied-bed protection, discharge, bed release and reuse, repeated-discharge rejection, and database consistency.
+
+
 END OF IPD–BED INTEGRATION NOTES
